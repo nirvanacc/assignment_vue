@@ -4,12 +4,10 @@
           <img src="@/assets/logo.png">
         <div class="head-nav">
           <ul class="nav-list">
-            <li> {{ 123 }}</li>
+            <li> {{ name }}</li>
             <li class="nav-pile">|</li>
             <li @click="quit">退出</li>
-            <!-- <li v-if="noLoginState" @click="loginVisible = true">登录</li> -->
             <li class="nav-pile">|</li>
-            <!-- <li v-if="noLoginState" @click="registerVisible = true">注册</li> -->
             <li>关于</li>
           </ul>
         </div>
@@ -19,14 +17,19 @@
 
 <script>
 export default {
-  name: 'head',
   data () {
     return {
-
+      name: ''
     }
   },
   methods: {
-
+    quit() {
+      sessionStorage.removeItem("obj");
+      this.$router.push('/');
+    }
+  },
+  mounted() {
+    this.name = JSON.parse(sessionStorage.obj).name;
   }
 }
 </script>

@@ -6,7 +6,6 @@
 
 <script>
 export default {
-  name: 'head',
   data () {
     return {
 
@@ -26,6 +25,5 @@ export default {
   line-height: 80px;
   background: #e3e4e8;
   clear: both;
-  margin-top: 30px;
 }
 </style>

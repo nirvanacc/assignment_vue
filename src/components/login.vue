@@ -7,14 +7,14 @@
         <el-form class="demo-ruleForm login-container">
            <!--tab标签-->
            <div class="tabsUser">
-             <el-tabs class="users" style="height:30px;font-size:25px">
-               <el-tab-pane label="普通用户" name="user" class="tab1"></el-tab-pane>
-               <el-tab-pane label="管理员" name="admin" class="tab2"></el-tab-pane>
+             <el-tabs v-model="activeName" @tab-click="handleClick" style="height:30px;font-size:25px">
+               <el-tab-pane label="普通用户" name="user"></el-tab-pane>
+               <el-tab-pane label="管理员" name="admin"></el-tab-pane>
              </el-tabs>
            </div>
            <div class="formGroup">
              <el-form-item label="账号" prop="user" >
-               <el-input type="text" v-model="account.name" v-mauto-complete="off" placeholder="请输入您的账号" class="form-control" ></el-input>
+               <el-input type="text" v-model="account.name" placeholder="请输入您的账号" class="form-control" ></el-input>
              </el-form-item>
              <el-form-item label="密码" prop="password" class="form-inline">
                <el-input type="password" v-model="account.password" auto-complete="off" placeholder="请输入密码" class="form-control" ></el-input>
@@ -36,7 +36,6 @@
 
 <script>
 export default {
-    name: '登录',
     data() {
         return {
             note: {
@@ -52,23 +51,54 @@ export default {
             account : {
                 name:'',
                 password:'',
-            }
+            },
+            activeName: 'user',
+            loginRole: 0
         };
     },
     methods: {
+      handleClick(tab) {
+        if(tab.name === 'user'){
+          // console.log('切换到普通用户');
+          this.loginRole = 0;
+        } else{
+          // console.log('切换到管理员');
+          this.loginRole = 1;
+        }
+
+      },
       login () {
-        this.$api.post('admin/login', this.account, r => {
-          if (r.code != 200) {
-            if (r.code == 101) {
-              this.$message.warning('用户名不存在！');
-            } else if (r.code == 102){
-              this.$message.warning('用户名或密码错误！');
+        if(this.loginRole === 0 ){
+          console.log("普通用户登陆");
+          this.$api.post('consumer/login', this.account, r => {
+            if (r.code != 200) {
+              if (r.code == 101) {
+                this.$message.warning('用户名不存在！');
+              } else if (r.code == 102){
+                this.$message.warning('用户名或密码错误！');
+              }
+            } else {
+              this.$message.success('欢迎您，' + r.data.name + '！');
+              sessionStorage.obj = JSON.stringify(r.data);
+              this.$router.push('/consumer');
             }
-          } else {
-            this.$message.success('欢迎您，' + r.data.name + '！');
-            this.$router.push('/admin');
-          }
-        })
+          });
+        } else {
+          console.log("管理员登陆");
+          this.$api.post('admin/login', this.account, r => {
+            if (r.code != 200) {
+              if (r.code == 101) {
+                this.$message.warning('用户名不存在！');
+              } else if (r.code == 102){
+                this.$message.warning('用户名或密码错误！');
+              }
+            } else {
+              this.$message.success('欢迎您，' + r.data.name + '！');
+              sessionStorage.obj = JSON.stringify(r.data);
+              this.$router.push('/admin');
+            }
+          });
+        }
       }
     }
 }</script>
