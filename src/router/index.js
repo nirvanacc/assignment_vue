@@ -7,17 +7,22 @@ export default new Router({
   routes: [
     {
       path: '/',
-      // name: 'login',
       component:() => import('@/components/login'),
     },
     {
-      path: '/admin',
-      // name: 'admin',
-      component:() => import('@/components/admin'),
+      path: '/serverInfo',
+      component:() => import('@/components/serverInfo'),
+    },
+    {
+      path: '/applicant',
+      component:() => import('@/components/applicant'),
+    },
+    {
+      path: '/userManager',
+      component:() => import('@/components/userManager'),
     },
     {
       path: '/consumer',
-      // name: 'login',
       component:() => import('@/components/consumer'),
     }
   ]

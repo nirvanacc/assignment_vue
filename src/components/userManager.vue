@@ -5,7 +5,7 @@
       <el-col :span="3"><Menu></Menu></el-col>
       <el-col :span="21">
         <div class="container">
-          <div style="font-size:20px;margin-left:10px;margin-top:10px">服务器信息</div>
+          <div style="font-size:20px;margin-left:10px;margin-top:10px">用户管理</div>
           <div class="toolbar">
             <el-form :inline="true" style="margin-left:10px">
               <el-form-item style="margin-top:7px">
@@ -79,7 +79,7 @@
         <el-button type="primary" @click="editSubmit">确 定</el-button>
       </span>
       <!-- 选择添加设备所有人 -->
-      <el-dialog title="分配给" :visible.sync="allocateVisible" append-to-body width="19%" top="15" :center="isCenter">
+      <el-dialog title="分配给" :visible.sync="allocateVisible" append-to-body width="19%" :center="isCenter">
         <el-input v-model="searchConsumerInput"></el-input>
         <el-table :data="consumerList" @row-click="rowClick" border style="width:311px">
           <el-table-column type="index" width="60" align="center"></el-table-column>
@@ -197,7 +197,7 @@ export default {
         if(this.server.isAllocated === undefined){
           this.server.isAllocated = 0;
         }
-        this.server.modifiedBy = "1";
+        this.server.modifiedBy = JSON.parse(sessionStorage.obj).id;
         this.$api.post('server/update', this.server, r => {
           if(r.code === 200){
             this.$message.success('操作成功！');
