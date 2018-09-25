@@ -95,6 +95,7 @@ export default {
             } else {
               this.$message.success('欢迎您，' + r.data.name + '！');
               sessionStorage.obj = JSON.stringify(r.data);
+              sessionStorage.index = '1';
               this.$router.push('/serverInfo');
             }
           });

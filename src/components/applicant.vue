@@ -9,27 +9,27 @@
           <div class="toolbar">
             <el-form :inline="true" style="margin-left:10px">
               <el-form-item style="margin-top:7px">
-                <el-input v-model="searchPara" placeholder="输入关键词搜索"></el-input>
+                <el-input placeholder="输入关键词搜索"></el-input>
               </el-form-item>
               <el-form-item style="margin-top:7px">
-                <el-button type="primary" @click="search">{{"搜索"}}</el-button>
+                <el-button type="primary">{{"搜索"}}</el-button>
               </el-form-item>
               <el-form-item style="margin-top:7px">
-                <el-button type="primary" @click="addServer">{{"历史申请"}}</el-button>
+                <el-button type="primary">{{"历史申请"}}</el-button>
               </el-form-item>
             </el-form>
           </div>
-          <el-table :data="serverList" style="width:100%;margin-top:10px">
+          <el-table :data="requestList" style="width:100%;margin-top:10px">
             <el-table-column type="index" width="60" align="center"></el-table-column>
             <el-table-column prop="detail" label="概述" width="400" align="center"></el-table-column>
             <el-table-column prop="applicantText" label="申请人" width="200" align="center"></el-table-column>
             <el-table-column prop="requestDate" label="申请日期" width="200" align="center" sortable></el-table-column>
             <el-table-column prop="stateText" label="状态" width="200" align="center" sortable></el-table-column>
             <el-table-column prop="operatorText" label="经办人" align="center" width="200"></el-table-column>
-            <el-table-column prop="operatorDate" label="操作日期" align="center" width="200"></el-table-column>
+            <el-table-column prop="operateDate" label="操作日期" align="center" width="200"></el-table-column>
             <el-table-column label="操作" align="center">
               <template slot-scope="scope">
-                <el-button @click="editServer(scope.$index, scope.row)" type="primary" size="small">处理</el-button>
+                <el-button type="primary" @click="handleRequest(scope.$index, scope.row)" size="small">处理</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -42,16 +42,39 @@
       </el-col>
     </el-row>
     <Footer></Footer>
-    <el-dialog title="处理申请" :visible.sync="handlerVisible" width="19%" top="15vh" :center="isCenter">
-      <el-form :model="requestInfo" label-position="top" label-width="80px">
+    <el-dialog title="处理申请" :visible.sync="handleVisible" width="19%" top="15vh" :center="isCenter">
+      <el-form :model="request" label-position="top" label-width="80px">
+        <el-form-item label="申请人">
+          <el-input v-model="request.applicantText"></el-input>
+        </el-form-item>
         <el-form-item label="申请详情">
-          <el-input type="textarea" :rows="2" placeholder="请输入内容" v-model="requestInfo.detail"></el-input>
+          <el-input type="textarea" :rows="2" v-model="request.detail"></el-input>
+        </el-form-item>
+        <el-form-item label="已添加设备">
+          <el-input v-model="pickedServersInput">
+            <el-button slot="append" icon="el-icon-circle-plus" @click="addServer"></el-button>
+            <el-button slot="append" icon="el-icon-remove" @click="deleteServer"></el-button>
+          </el-input>
         </el-form-item>
       </el-form>
       <span slot="footer" class="dialog-footer">
-        <el-button @click="applyVisible = false">取 消</el-button>
-        <el-button type="primary" @click="applySubmit">确 定</el-button>
+        <el-button @click="handleVisible = false">取 消</el-button>
+        <el-button type="primary" @click="rejectRequest">拒 绝</el-button>
+        <el-button type="primary" @click="submitHandle">确 定</el-button>
       </span>
+      <el-dialog title="可分配设备" :visible.sync="usableVisible" append-to-body width="30%" :center="isCenter">
+        <el-table :data="usableServers" @selection-change="handleSelectionChange" style="width:516px">
+          <el-table-column type="selection" width="55" align="center"></el-table-column>
+          <el-table-column type="index" width="60" align="center"></el-table-column>
+          <el-table-column prop="name" label="设备名称" width="100" align="center"></el-table-column>
+          <el-table-column prop="os" label="系统" width="150" align="center"></el-table-column>
+          <el-table-column prop="runningStateText" label="运行状态" width="150" align="center"></el-table-column>
+        </el-table>
+        <span slot="footer" class="dialog-footer">
+          <el-button @click="usableVisible = false">取 消</el-button>
+          <el-button type="primary" @click="fillInput">确 定</el-button>
+        </span>
+      </el-dialog>
     </el-dialog>
   </div>
 </template>
@@ -77,10 +100,18 @@ export default {
         pageSizes: [5, 10],
         isCenter: true,
 
-        requestInfoList: [],
-        handlerVisible: false,
+        handleVisible: false,
+        usableVisible: false,
 
-        serverList: [],
+        requestList: [],
+        request: {},
+        usableServers: [],
+        pickedServers: [],
+        pickedServersInput: '',
+        message: {},
+
+
+
         consumerList: [],
         server: {
           runningState: 0
@@ -107,54 +138,83 @@ export default {
         return this.page.pageNum;
       }
     },
-    watch: {
-      searchConsumerInput (curVal, oldVal) {
-        this.getConsumerList();
-      }
-    },
     methods: {
       handleCurrentChange (val) {
         this.page.pageNum = val;
-        this.getServerList();
+        this.getRequestList();
       },
       handleSizeChange (val) {
         this.page.size = val;
-        this.getServerList();
+        this.getRequestList();
       },
       handleSelectionChange(val) {
-       this.deleteBatchList = val;
+       this.pickedServers = val;
       },
-      getServerList() {
+      getRequestList() {
         this.$api.get('requestInfo/pageAll?page='+this.page.pageNum+'&size='+this.page.size, null, r => {
-          this.serverList = r.data.content;
+          this.requestList = r.data.content;
           this.page.totalRows = r.data.totalElements;
         })
       },
-      getConsumerList(){
-        this.$api.get('consumer/fuzzy?para='+this.searchConsumerInput, null, r => {
-          this.consumerList = r.data;
+      getUsableServers() {
+        this.$api.get('server/usable', null, r => {
+          this.usableServers = r.data;
         })
       },
+      handleRequest: function (index, row) {
+        this.request = row;
+        this.handleVisible = true;
+        console.log(row);
+      },
+      fillInput() {
+        for(let x in this.pickedServers) {
+          this.pickedServers[x].owner = this.request.applicant;
+          this.pickedServersInput = this.pickedServersInput + this.pickedServers[x].name + '(' + this.pickedServers[x].os + ');';
+        }
+        this.usableVisible = false;
+      },
+      rejectRequest() {
+        this.request.state = 1;
+        this.request.operator = JSON.parse(sessionStorage.obj).id;
+        this.$api.post('requestInfo/update', this.request, r => {
+          this.handleVisible = false;
+          this.$message.success('申请已驳回！');
+          this.getRequestList();
+        })
+        // 发送驳回消息
+        this.message.receiver = this.request.applicant;
+        this.message.text = '申请失败。您的“' + this.request.detail +'”已被驳回！';
+        this.message.poster = JSON.parse(sessionStorage.obj).id;
+        this.$api.post('message/update', this.message, r => {})
+      },
+      submitHandle() {
+        this.$api.post('server/addOwner', this.pickedServers, r => {})
+        this.request.state = 2;
+        this.request.operator = JSON.parse(sessionStorage.obj).id;
+        this.$api.post('requestInfo/update', this.request, r => {
+          this.handleVisible = false;
+          this.$message.success('申请已批准！');
+          this.getRequestList();
+        })
+        // 发送批准消息
+        this.message.receiver = this.request.applicant;
+        this.message.text = '申请成功。您的“' + this.request.detail +'”已批准！';
+        this.message.poster = JSON.parse(sessionStorage.obj).id;
+        this.$api.post('message/update', this.message, r => {})
+      },
       addServer() {
-        this.editVisible = true;
-        this.title = '新增设备';
-        this.editShow = false;
+        this.getUsableServers();
+        this.usableVisible = true;
+      },
+      deleteServer() {
+        this.pickedServersInput = '';
+        this.pickedServers = [];
       },
       editServer: function (index, row) {
         this.editVisible = true;
         this.title = '设备详情';
         this.editShow = true;
         this.server = row;
-      },
-      addOwner() {
-        this.getConsumerList();
-        this.allocateVisible = true;
-      },
-      rowClick(row, event, column) {
-        this.server.owner = row.id;
-        this.server.ownerText = row.name;
-        this.server.isAllocated = 1;
-        this.allocateVisible = false;
       },
       deleteOwner() {
         this.server.owner = null;
@@ -199,33 +259,14 @@ export default {
           });
         }
       },
-      deleteServer: function (index, row) {
-        this.$confirm('此操作将永久删除该条信息, 是否继续?', '提示', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        }).then(() => {
-          this.$api.get('server/delete?id=' + row.id, null, r => {
-            if(r.code === 200){
-              this.$message.success('删除成功！');
-              this.getServerList();
-            }
-          })
-        }).catch(() => {
-          this.$message({
-            type: 'info',
-            message: '已取消删除'
-          });
-        });
-      },
       search() {
         this.$api.get('server/fuzzy?para=' + this.searchPara, null, r => {
-          this.serverList = r.data;
+          this.requestList = r.data;
         })
       }
     },
     mounted() {
-      this.getServerList();
+      this.getRequestList();
     }
 }
 </script>
