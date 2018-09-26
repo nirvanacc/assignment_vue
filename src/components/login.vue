@@ -4,7 +4,7 @@
     <!--login框，表单+tab标签页的组合-->
     <div class="loginFrame">
         <!--表单组件放在外面，标签栏在里面-->
-        <el-form class="demo-ruleForm login-container">
+        <el-form class="login-container" :model="account" :rules="rules" ref="loginForm">
            <!--tab标签-->
            <div class="tabsUser">
              <el-tabs v-model="activeName" @tab-click="handleClick" style="height:30px;font-size:25px">
@@ -53,23 +53,36 @@ export default {
                 password:'',
             },
             activeName: 'user',
-            loginRole: 0
+            loginRole: 0,
+            rules: {
+              user: [
+                { required: true, message: '请输入您的账号', trigger: 'blur' }
+              ],
+              password: [
+                { required: true, message: '请输入密码', trigger: 'blur' }
+              ]
+            }
         };
     },
     methods: {
       handleClick(tab) {
         if(tab.name === 'user'){
-          // console.log('切换到普通用户');
           this.loginRole = 0;
         } else{
-          // console.log('切换到管理员');
           this.loginRole = 1;
         }
 
       },
       login () {
+        // this.$refs.loginForm.validate((valid) => {
+        //   if (valid) {
+        //     console.log(123);
+        //   } else {
+        //     console.log('error submit!!');
+        //     return false;
+        //   }
+        // });
         if(this.loginRole === 0 ){
-          console.log("普通用户登陆");
           this.$api.post('consumer/login', this.account, r => {
             if (r.code != 200) {
               if (r.code == 101) {
@@ -84,7 +97,6 @@ export default {
             }
           });
         } else {
-          console.log("管理员登陆");
           this.$api.post('admin/login', this.account, r => {
             if (r.code != 200) {
               if (r.code == 101) {
@@ -104,7 +116,7 @@ export default {
     }
 }</script>
 
-<style>
+<style scoped>
 .login-container {
     -webkit-border-radius: 5px;
     border-radius: 15px;

@@ -6,16 +6,16 @@
           <div class="toolbar" style="margin-top:18px;width:100%">
             <el-form :inline="true" style="margin-left:10px">
               <el-form-item style="margin-top:7px">
-                <el-input v-model="searchPara" placeholder="输入关键词搜索"></el-input>
+                <el-input placeholder="输入关键词搜索"></el-input>
               </el-form-item>
               <el-form-item style="margin-top:7px">
                 <el-button type="primary">{{"搜索"}}</el-button>
               </el-form-item>
               <el-form-item style="margin-top:7px">
-                <el-button type="primary" @click="apply">{{"申请设备"}}</el-button>
+                <el-button type="warning" @click="applyVisible = true">{{"申请设备"}}</el-button>
               </el-form-item>
               <el-form-item style="margin-top:7px">
-                <el-button type="primary" @click="returnServerBatch">{{"归还设备"}}</el-button>
+                <el-button type="danger" @click="returnServerBatch">{{"归还设备"}}</el-button>
               </el-form-item>
               <el-badge :value="messageNum" style="float:right;margin-right:24px;margin-top:18px;">
                 <div class="message" @click="showMyMessage"></div>
@@ -31,8 +31,8 @@
             <el-table-column prop="modifiedDate" label="分配于" width="200" align="center" sortable></el-table-column>
             <el-table-column label="操作" align="center">
               <template slot-scope="scope">
-                <el-button @click="editServer(scope.$index, scope.row)" type="primary" size="small">详情</el-button>
-                <el-button @click="returnServer(scope.$index, scope.row)" type="primary" size="small">归还</el-button>
+                <el-button @click="showDetail(scope.$index, scope.row)" type="primary" size="small">详情</el-button>
+                <el-button @click="returnServer(scope.$index, scope.row)" type="danger" size="small">归还</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -45,15 +45,50 @@
       </div>
     <Footer></Footer>
     <el-dialog title="申请设备" :visible.sync="applyVisible" width="19%" top="15vh" :center="isCenter">
-      <el-form :model="requestInfo" label-position="top" label-width="80px">
-        <el-form-item label="申请详情">
+      <el-form :model="requestInfo" :rules="rules" ref="requestForm" label-position="top" label-width="80px">
+        <el-form-item label="申请详情" prop="detail">
           <el-input type="textarea" :rows="2" placeholder="请输入内容" v-model="requestInfo.detail"></el-input>
         </el-form-item>
       </el-form>
       <span slot="footer" class="dialog-footer">
-        <el-button @click="applyVisible = false">取 消</el-button>
+        <el-button @click="cancle">取 消</el-button>
         <el-button type="primary" @click="applySubmit">确 定</el-button>
       </span>
+    </el-dialog>
+    <el-dialog title="设备详情" :visible.sync="detailVisible" width="22%" top="15vh" :center="isCenter">
+      <el-form :model="server" label-position="right" label-width="110px">
+        <el-row>
+          <el-col :span="12">
+            <el-form-item label="名称：">
+              <span>{{ server.name }}</span>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="搭载系统：">
+              <span>{{ server.os }}</span>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row>
+          <el-col :span="12">
+            <el-form-item label="运行状态：">
+              <span>{{ server.runningStateText }}</span>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row>
+          <el-col :span="12">
+            <el-form-item label="最近的编辑人：">
+              <span>{{ server.modifiedByText }}</span>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="编辑时间：">
+              <span>{{ server.modifiedDate }}</span>
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
     </el-dialog>
     <el-dialog title="我的消息" :visible.sync="messageVisible" width="40%" top="15vh" :center="isCenter">
       <el-table :data="messageList" :show-header="showHeader">
@@ -90,12 +125,20 @@ export default {
       isCenter: true,
       showHeader: false,
       applyVisible: false,
+      detailVisible: false,
       messageVisible: false,
       consumerId: '',
       requestInfo: {},
       messageNum: 0,
       messageList: [],
-      serverList: []
+      serverList: [],
+      server: {},
+      returnBatchList: [],
+      rules: {
+        detail: [
+          { required: true, message: '请输入申请详情', trigger: 'blur' }
+        ]
+      }
     }
   },
   computed: {
@@ -113,7 +156,7 @@ export default {
       this.getMyServerList();
     },
     handleSelectionChange(val) {
-      this.deleteBatchList = val;
+      this.returnBatchList = val;
     },
     getMyServerList() {
       this.$api.get('server/pageByConsumer?id='+this.consumerId+'&page='+this.page.pageNum+'&size='+this.page.size, null, r => {
@@ -142,10 +185,7 @@ export default {
           }
         })
       }).catch(() => {
-        this.$message({
-          type: 'info',
-          message: '已取消删除'
-        });
+        this.$message.info('已取消删除');
       });
     },
     showMyMessage() {
@@ -164,20 +204,40 @@ export default {
           }
         })
       }).catch(() => {
-        this.$message({
-          type: 'info',
-          message: '已取消'
-        });
+        this.$message.info('已取消');
       });
     },
     returnServerBatch() {
-
+      if(this.returnBatchList.length <= 0){
+        this.$message.warning('请至少选择一台设备！');
+      } else{
+        this.$confirm('您确定要归还此' + this.returnBatchList.length +'台设备吗?', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(() => {
+          this.$api.post('server/returnBatch', this.returnBatchList, r => {
+            if(r.code === 200){
+              this.$message.success('归还成功！');
+              this.getMyServerList();
+            }
+          })
+        }).catch(() => {
+          this.$message({
+            type: 'info',
+            message: '已取消'
+          });
+        });
+      }
     },
-    apply() {
-      this.applyVisible = true;
+    cancle() {
+      this.applyVisible = false;
+      this.requestInfo.detail = '';
     },
     applySubmit() {
-      this.$confirm('确定提交该申请码?', '提示', {
+      this.$refs.requestForm.validate((valid) => {
+        if (valid) {
+          this.$confirm('确定提交该申请码?', '提示', {
             confirmButtonText: '确定',
             cancelButtonText: '取消',
             type: 'warning'
@@ -187,18 +247,26 @@ export default {
               if(r.code === 200){
                 this.$message.success('申请成功！');
                 this.applyVisible=false;
+                this.requestInfo.detail = '';
               }
             })
           }).catch(() => {
-            this.$message({
-              type: 'info',
-              message: '已取消申请'
-            });
+            this.$message.info('已取消申请');
+            this.applyVisible=false;
+            this.requestInfo.detail = '';
           });
+        } else {
+          console.log('error submit!!');
+          return false;
+        }
+      });
     },
 
 
-    editServer: function (index, row) {
+    showDetail: function (index, row) {
+      console.log(row);
+      this.server = row;
+      this.detailVisible = true;
 
     },
     deleteServer: function (index, row) {
@@ -213,7 +281,7 @@ export default {
 }
 </script>
 
-<style>
+<style scoped>
 .contentBg {
   background-image:url("../assets/loginbg.jpg");
   background-size: 100% 100%;

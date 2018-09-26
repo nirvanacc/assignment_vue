@@ -88,4 +88,24 @@ body {
     margin: 0;
     padding-left: 0;
 }
+.pageTitle{
+  font-size: 20px;
+  font-weight: 800;
+  margin-left: 10px;
+  margin-top: 10px;
+}
+.container{
+  float: left;
+}
+.el-table__body{
+  width: 100%;
+}
+.adminTable{
+  width: 100%;
+  margin-top:10px;
+}
+.pageBar{
+  float: right;
+  margin-top: 3px;
+}
 </style>

@@ -1,7 +1,7 @@
 <template>
-  <el-row class="tac" style="float:left">
+  <el-row class="tac">
     <el-col>
-      <el-menu :default-active="index" class="el-menu-vertical-demo" background-color="#545c64" text-color="#fff" active-text-color="#ffd04b">
+      <el-menu class="el-menu-vertical-demo" :default-active="index" background-color="#545c64" text-color="#fff" active-text-color="#ffd04b">
         <el-menu-item index="1" @click="menu1">
           <i class="el-icon-menu"></i>
           <span slot="title">服务器信息</span>
@@ -47,6 +47,9 @@
 </script>
 
 <style>
+.tac{
+  float: left;
+}
 .el-menu-vertical-demo:not(.el-menu--collapse) {
    width: 166.5%;
    min-height: 773px;

@@ -5,7 +5,7 @@
       <el-col :span="3"><Menu></Menu></el-col>
       <el-col :span="21">
         <div class="container">
-          <div style="font-size:20px;margin-left:10px;margin-top:10px">服务器信息</div>
+          <div class="pageTitle">服务器管理</div>
           <div class="toolbar">
             <el-form :inline="true" style="margin-left:10px">
               <el-form-item style="margin-top:7px">
@@ -15,14 +15,15 @@
                 <el-button type="primary" @click="search">{{"搜索"}}</el-button>
               </el-form-item>
               <el-form-item style="margin-top:7px">
-                <el-button type="primary" @click="addServer">{{"新增"}}</el-button>
+                <el-button type="warning" @click="addServer">{{"新增"}}</el-button>
               </el-form-item>
               <el-form-item style="margin-top:7px">
-                <el-button type="primary" @click="deleteBatch">{{"批量删除"}}</el-button>
+                <el-button type="danger" @click="deleteBatch">{{"批量删除"}}</el-button>
               </el-form-item>
             </el-form>
           </div>
-          <el-table :data="serverList" @selection-change="handleSelectionChange" style="width:100%;margin-top:10px">
+          <!-- 服务器列表 -->
+          <el-table class="adminTable" :data="serverList" @selection-change="handleSelectionChange">
             <el-table-column type="selection" width="55" align="center"></el-table-column>
             <el-table-column type="index" width="60" align="center"></el-table-column>
             <el-table-column prop="name" label="名称" width="200" align="center"></el-table-column>
@@ -34,26 +35,26 @@
             <el-table-column label="操作" align="center">
               <template slot-scope="scope">
                 <el-button @click="editServer(scope.$index, scope.row)" type="primary" size="small">详情</el-button>
-                <el-button @click="deleteServer(scope.$index, scope.row)" type="primary" size="small">删除</el-button>
+                <el-button @click="deleteServer(scope.$index, scope.row)" type="danger" size="small">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
-          <el-pagination layout="total, sizes, prev, pager, next"
+          <el-pagination class="pageBar"
+            layout="total, sizes, prev, pager, next"
             @current-change="handleCurrentChange" @size-change="handleSizeChange"
-            :current-page="currentPage" :page-sizes="pageSizes" :page-size="page.size" :total="page.totalRows"
-            style="float:right;margin-top:3px">
+            :current-page="currentPage" :page-sizes="pageSizes" :page-size="page.size" :total="page.totalRows">
           </el-pagination>
         </div>
       </el-col>
     </el-row>
     <Footer></Footer>
     <!-- 编辑服务器信息 -->
-    <el-dialog :title="title" :visible.sync="editVisible" width="25%" :center="isCenter">
-      <el-form :model="server" label-position="right" label-width="80px">
-        <el-form-item label="名称">
+    <el-dialog :title="title" :visible.sync="editVisible" width="18%" :center="isCenter" :show-close="showClose">
+      <el-form :model="server" :rules="rules" ref="editForm" label-position="right" label-width="80px">
+        <el-form-item label="名称" prop="name">
           <el-input v-model="server.name" placeholder="服务器名称 \ 代号"></el-input>
         </el-form-item>
-        <el-form-item label="搭载系统">
+        <el-form-item label="搭载系统" prop="os">
           <el-input v-model="server.os" placeholder="服务器系统"></el-input>
         </el-form-item>
         <el-form-item label="运行状态">
@@ -75,7 +76,7 @@
         </el-form-item>
       </el-form>
       <span slot="footer" class="dialog-footer">
-        <el-button @click="editVisible = false">取 消</el-button>
+        <el-button @click="cancle">取 消</el-button>
         <el-button type="primary" @click="editSubmit">确 定</el-button>
       </span>
       <!-- 选择添加设备所有人 -->
@@ -129,7 +130,16 @@ export default {
         }],
         deleteBatchList: [],
         searchConsumerInput: '',
-        isCenter: true
+        isCenter: true,
+        showClose: false,
+        rules: {
+          name: [
+            { required: true, message: '请输入服务器名称', trigger: 'blur' }
+          ],
+          os: [
+            { required: true, message: '请输入搭载系统', trigger: 'blur' }
+          ]
+        }
       }
     },
     // 分页的计算属性
@@ -154,6 +164,11 @@ export default {
       },
       handleSelectionChange(val) {
        this.deleteBatchList = val;
+      },
+      closeDialog() {
+        this.editVisible = false;
+        this.server = {};
+        this.server.runningState = 0;
       },
       getServerList() {
         this.$api.get('server/pageAll?page='+this.page.pageNum+'&size='+this.page.size, null, r => {
@@ -193,25 +208,35 @@ export default {
         this.server.isAllocated = 0;
         this.$refs.ownerName.value ='';
       },
+      cancle() {
+        this.closeDialog();
+        this.$refs.editForm.resetFields();
+      },
       editSubmit() {
-        if(this.server.isAllocated === undefined){
-          this.server.isAllocated = 0;
-        }
-        this.server.modifiedBy = JSON.parse(sessionStorage.obj).id;
-        this.$api.post('server/update', this.server, r => {
-          if(r.code === 200){
-            this.$message.success('操作成功！');
-            this.getServerList();
-            this.editVisible = false;
-            this.server = {};
+        this.$refs.editForm.validate((valid) => {
+          if (valid) {
+            if(this.server.isAllocated === undefined){
+              this.server.isAllocated = 0;
+            }
+            this.server.modifiedBy = JSON.parse(sessionStorage.obj).id;
+            this.$api.post('server/update', this.server, r => {
+              if(r.code === 200){
+                this.$message.success('操作成功！');
+                this.getServerList();
+                this.closeDialog();
+              }
+            })
+          } else {
+            console.log('error submit!!');
+            return false;
           }
-        })
+        });
       },
       deleteBatch() {
         if(this.deleteBatchList.length <= 0){
           this.$message.warning('请至少选择一台设备！');
         } else{
-          this.$confirm('此操作将永久删除此' + this.deleteBatchList.length +'条信息, 是否继续?', '提示', {
+          this.$confirm('此操作将永久删除此' + this.deleteBatchList.length +'条设备信息, 是否继续?', '提示', {
             confirmButtonText: '确定',
             cancelButtonText: '取消',
             type: 'warning'
@@ -231,7 +256,7 @@ export default {
         }
       },
       deleteServer: function (index, row) {
-        this.$confirm('此操作将永久删除该条信息, 是否继续?', '提示', {
+        this.$confirm('此操作将永久删除该设备信息, 是否继续?', '提示', {
           confirmButtonText: '确定',
           cancelButtonText: '取消',
           type: 'warning'
@@ -261,10 +286,5 @@ export default {
 }
 </script>
 <style>
-.container{
-  float: left;
-}
-.el-table__body{
-  width: 100%;
-}
+
 </style>
