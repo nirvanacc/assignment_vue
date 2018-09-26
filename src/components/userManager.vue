@@ -12,7 +12,7 @@
                 <el-input placeholder="输入关键词搜索"></el-input>
               </el-form-item>
               <el-form-item style="margin-top:7px">
-                <el-button type="primary" @click="search">{{"搜索"}}</el-button>
+                <el-button type="primary">{{"搜索"}}</el-button>
               </el-form-item>
               <el-form-item style="margin-top:7px">
                 <el-button type="warning" @click="addConsumer">{{"新增"}}</el-button>
@@ -139,8 +139,6 @@ export default {
         consumerList: [],
         consumer: {},
         server: {},
-        consumerList: [],
-        searchPara: '',
         editVisible: false,
         title: '',
         editShow: false,

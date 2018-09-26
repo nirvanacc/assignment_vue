@@ -24,6 +24,10 @@ export default new Router({
     {
       path: '/consumer',
       component:() => import('@/components/consumer'),
+    },
+    {
+      path: '/mock',
+      component:() => import('@/components/addadmin'),
     }
   ]
 })

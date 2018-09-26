@@ -5,7 +5,7 @@
       <el-col :span="3"><Menu></Menu></el-col>
       <el-col :span="21">
         <div class="container">
-          <div class="pageTitle">服务器管理</div>
+          <div class="pageTitle">设备管理</div>
           <div class="toolbar">
             <el-form :inline="true" style="margin-left:10px">
               <el-form-item style="margin-top:7px">
@@ -49,8 +49,8 @@
     </el-row>
     <Footer></Footer>
     <!-- 编辑服务器信息 -->
-    <el-dialog :title="title" :visible.sync="editVisible" width="18%" :center="isCenter" :show-close="showClose">
-      <el-form :model="server" :rules="rules" ref="editForm" label-position="right" label-width="80px">
+    <el-dialog :title="title" :visible.sync="editVisible" width="19%" :center="isCenter">
+      <el-form :model="server" :rules="rules" ref="editForm" label-position="right" label-width="96px">
         <el-form-item label="名称" prop="name">
           <el-input v-model="server.name" placeholder="服务器名称 \ 代号"></el-input>
         </el-form-item>
@@ -63,7 +63,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="分配给">
-          <el-input placeholder="添加设备所有人" ref="ownerName" v-model="server.ownerText">
+          <el-input placeholder="添加设备所有人" v-model="server.ownerText">
             <el-button slot="append" icon="el-icon-circle-plus" @click="addOwner"></el-button>
             <el-button slot="append" icon="el-icon-remove" @click="deleteOwner"></el-button>
           </el-input>
@@ -76,16 +76,18 @@
         </el-form-item>
       </el-form>
       <span slot="footer" class="dialog-footer">
-        <el-button @click="cancle">取 消</el-button>
+        <el-button @click="editVisible = false">取 消</el-button>
         <el-button type="primary" @click="editSubmit">确 定</el-button>
       </span>
       <!-- 选择添加设备所有人 -->
-      <el-dialog title="分配给" :visible.sync="allocateVisible" append-to-body width="19%" :center="isCenter">
-        <el-input v-model="searchConsumerInput"></el-input>
-        <el-table :data="consumerList" @row-click="rowClick" border style="width:311px">
+      <el-dialog title="分配给" :visible.sync="allocateVisible" append-to-body width="27%" :center="isCenter">
+        <span class="quickSearch">快速查询：</span>
+        <el-input size="small" placeholder="输入关键字查询用户" v-model="searchConsumerInput" style="width:170px"></el-input>
+        <el-table :data="consumerList" @row-click="rowClick" border style="width:461px;margin-top:5px">
           <el-table-column type="index" width="60" align="center"></el-table-column>
           <el-table-column prop="name" label="用户名" width="100" align="center"></el-table-column>
           <el-table-column prop="phone" label="电话" width="150" align="center"></el-table-column>
+          <el-table-column prop="email" label="邮箱" width="150" align="center"></el-table-column>
         </el-table>
       </el-dialog>
     </el-dialog>
@@ -113,14 +115,12 @@ export default {
         pageSizes: [5, 10],
         serverList: [],
         consumerList: [],
-        server: {
-          runningState: 0
-        },
-        searchPara: '',
+        server: {},
+        searchPara: '', // 多条件查询参数
         editVisible: false,
-        allocateVisible: false,
+        allocateVisible: false, // 设备分配dialog
         title: '',
-        editShow: false,
+        editShow: false, // 控制元素编辑时才显示
         options: [{
            value: 0,
            label: '正常'
@@ -128,10 +128,9 @@ export default {
           value: 1,
           label: '异常'
         }],
-        deleteBatchList: [],
-        searchConsumerInput: '',
+        deleteBatchList: [], // 批量删除的设备对象列表
+        searchConsumerInput: '', // 分配时的一个实时查询用户的参数
         isCenter: true,
-        showClose: false,
         rules: {
           name: [
             { required: true, message: '请输入服务器名称', trigger: 'blur' }
@@ -149,68 +148,73 @@ export default {
       }
     },
     watch: {
+      // 监听参数变化，实时改变查询结果
       searchConsumerInput (curVal, oldVal) {
         this.getConsumerList();
       }
     },
     methods: {
+      // 换页
       handleCurrentChange (val) {
         this.page.pageNum = val;
         this.getServerList();
       },
+      // 改变单页容量
       handleSizeChange (val) {
         this.page.size = val;
         this.getServerList();
       },
+      // 多选改变时传递数据
       handleSelectionChange(val) {
        this.deleteBatchList = val;
       },
-      closeDialog() {
-        this.editVisible = false;
-        this.server = {};
-        this.server.runningState = 0;
-      },
+      // 分页查询设备
       getServerList() {
         this.$api.get('server/pageAll?page='+this.page.pageNum+'&size='+this.page.size, null, r => {
           this.serverList = r.data.content;
           this.page.totalRows = r.data.totalElements;
         })
       },
+      // 模糊查询用户
       getConsumerList(){
         this.$api.get('consumer/fuzzy?para='+this.searchConsumerInput, null, r => {
           this.consumerList = r.data;
         })
       },
+      // 添加设备，表单置空
       addServer() {
-        this.editVisible = true;
+        this.server = {};
+        // this.$refs.editForm.resetFields();
+        this.server.runningState = 0;
         this.title = '新增设备';
         this.editShow = false;
-      },
-      editServer: function (index, row) {
         this.editVisible = true;
+      },
+      // 编辑设备
+      editServer: function (index, row) {
         this.title = '设备详情';
         this.editShow = true;
         this.server = row;
+        this.editVisible = true;
       },
+      // 添加设备所有人
       addOwner() {
+        this.searchConsumerInput = '';
         this.getConsumerList();
         this.allocateVisible = true;
       },
+      // 点击table行设置设备所有人
       rowClick(row, event, column) {
         this.server.owner = row.id;
         this.server.ownerText = row.name;
         this.server.isAllocated = 1;
         this.allocateVisible = false;
       },
+      // 删除设置的尚未提交的设备所有人
       deleteOwner() {
         this.server.owner = null;
-        this.server.ownerText = null;
+        this.server.ownerText = '';
         this.server.isAllocated = 0;
-        this.$refs.ownerName.value ='';
-      },
-      cancle() {
-        this.closeDialog();
-        this.$refs.editForm.resetFields();
       },
       editSubmit() {
         this.$refs.editForm.validate((valid) => {
@@ -223,11 +227,11 @@ export default {
               if(r.code === 200){
                 this.$message.success('操作成功！');
                 this.getServerList();
-                this.closeDialog();
+                this.editVisible = false;
               }
             })
           } else {
-            console.log('error submit!!');
+            console.log('验证未通过');
             return false;
           }
         });
@@ -248,10 +252,7 @@ export default {
               }
             })
           }).catch(() => {
-            this.$message({
-              type: 'info',
-              message: '已取消删除'
-            });
+            this.$message.info("已取消删除");
           });
         }
       },
@@ -268,16 +269,17 @@ export default {
             }
           })
         }).catch(() => {
-          this.$message({
-            type: 'info',
-            message: '已取消删除'
-          });
+          this.$message.info("已取消删除");
         });
       },
       search() {
-        this.$api.get('server/fuzzy?para=' + this.searchPara, null, r => {
-          this.serverList = r.data;
-        })
+        if(this.searchPara === ''){
+          this.getServerList();
+        } else {
+          this.$api.get('server/fuzzy?para=' + this.searchPara, null, r => {
+            this.serverList = r.data;
+          })
+        }
       }
     },
     mounted() {
@@ -285,6 +287,10 @@ export default {
     }
 }
 </script>
-<style>
-
+<style scoped>
+.quickSearch{
+  margin-left: 10px;
+  font-size: 15px;
+  font-weight: bold;
+}
 </style>

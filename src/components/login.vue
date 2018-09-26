@@ -13,7 +13,7 @@
              </el-tabs>
            </div>
            <div class="formGroup">
-             <el-form-item label="账号" prop="user" >
+             <el-form-item label="账号" prop="name" >
                <el-input type="text" v-model="account.name" placeholder="请输入您的账号" class="form-control" ></el-input>
              </el-form-item>
              <el-form-item label="密码" prop="password" class="form-inline">
@@ -44,7 +44,7 @@ export default {
                 left:"0px",
                 width: "100%",
                 height:"100%",
-                backgroundImage: "url(" + require("../assets/loginbg.jpg") + ")",
+                backgroundImage: "url(" + require("../assets/1.jpg") + ")",
                 backgroundSize: "100% 100%",
                 backgroundRepeat: "no-repeat",
             },
@@ -55,7 +55,7 @@ export default {
             activeName: 'user',
             loginRole: 0,
             rules: {
-              user: [
+              name: [
                 { required: true, message: '请输入您的账号', trigger: 'blur' }
               ],
               password: [
@@ -74,44 +74,43 @@ export default {
 
       },
       login () {
-        // this.$refs.loginForm.validate((valid) => {
-        //   if (valid) {
-        //     console.log(123);
-        //   } else {
-        //     console.log('error submit!!');
-        //     return false;
-        //   }
-        // });
-        if(this.loginRole === 0 ){
-          this.$api.post('consumer/login', this.account, r => {
-            if (r.code != 200) {
-              if (r.code == 101) {
-                this.$message.warning('用户名不存在！');
-              } else if (r.code == 102){
-                this.$message.warning('用户名或密码错误！');
-              }
+        this.$refs.loginForm.validate((valid) => {
+          if (valid) {
+            if(this.loginRole === 0 ){
+              this.$api.post('consumer/login', this.account, r => {
+                if (r.code != 200) {
+                  if (r.code == 101) {
+                    this.$message.warning('用户名不存在！');
+                  } else if (r.code == 102){
+                    this.$message.warning('用户名或密码错误！');
+                  }
+                } else {
+                  this.$message.success('欢迎您，' + r.data.name + '！');
+                  sessionStorage.obj = JSON.stringify(r.data);
+                  this.$router.push('/consumer');
+                }
+              });
             } else {
-              this.$message.success('欢迎您，' + r.data.name + '！');
-              sessionStorage.obj = JSON.stringify(r.data);
-              this.$router.push('/consumer');
+              this.$api.post('admin/login', this.account, r => {
+                if (r.code != 200) {
+                  if (r.code == 101) {
+                    this.$message.warning('用户名不存在！');
+                  } else if (r.code == 102){
+                    this.$message.warning('用户名或密码错误！');
+                  }
+                } else {
+                  this.$message.success('欢迎您，' + r.data.name + '！');
+                  sessionStorage.obj = JSON.stringify(r.data);
+                  sessionStorage.index = '1';
+                  this.$router.push('/serverInfo');
+                }
+              });
             }
-          });
-        } else {
-          this.$api.post('admin/login', this.account, r => {
-            if (r.code != 200) {
-              if (r.code == 101) {
-                this.$message.warning('用户名不存在！');
-              } else if (r.code == 102){
-                this.$message.warning('用户名或密码错误！');
-              }
-            } else {
-              this.$message.success('欢迎您，' + r.data.name + '！');
-              sessionStorage.obj = JSON.stringify(r.data);
-              sessionStorage.index = '1';
-              this.$router.push('/serverInfo');
-            }
-          });
-        }
+          } else {
+            console.log('error submit!!');
+            return false;
+          }
+        });
       }
     }
 }</script>

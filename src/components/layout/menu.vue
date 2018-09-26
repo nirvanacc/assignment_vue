@@ -4,7 +4,7 @@
       <el-menu class="el-menu-vertical-demo" :default-active="index" background-color="#545c64" text-color="#fff" active-text-color="#ffd04b">
         <el-menu-item index="1" @click="menu1">
           <i class="el-icon-menu"></i>
-          <span slot="title">服务器信息</span>
+          <span slot="title">设备管理</span>
         </el-menu-item>
         <el-menu-item index="2" @click="menu2">
           <i class="el-icon-document"></i>
