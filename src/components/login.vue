@@ -44,7 +44,7 @@ export default {
                 left:"0px",
                 width: "100%",
                 height:"100%",
-                backgroundImage: "url(" + require("../assets/1.jpg") + ")",
+                backgroundImage: "url(" + require("../assets/loginbg.jpg") + ")",
                 backgroundSize: "100% 100%",
                 backgroundRepeat: "no-repeat",
             },

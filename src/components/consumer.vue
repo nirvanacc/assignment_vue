@@ -268,9 +268,6 @@ export default {
       this.server = row;
       this.detailVisible = true;
 
-    },
-    deleteServer: function (index, row) {
-
     }
   },
   mounted() {
@@ -283,7 +280,7 @@ export default {
 
 <style scoped>
 .contentBg {
-  background-image:url("../assets/loginbg.jpg");
+  background-image:url("../assets/consumerbg.jpg");
   background-size: 100% 100%;
   width: 100%;
   height: 773px;
